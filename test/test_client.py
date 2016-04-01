@@ -2,7 +2,7 @@ import logging
 import time
 import uuid
 import os
-import Queue
+import queue
 
 import pytest
 
@@ -57,7 +57,7 @@ if live_testing.enabled:
 
         timeout_duration = 60
 
-        pending_events = Queue.Queue()
+        pending_events = queue.Queue()
 
         def get_event(predicate):
             """
@@ -82,7 +82,7 @@ if live_testing.enabled:
                    and time.time() < timeout):
                 try:
                     is_socket, event = pending_events.get(timeout=1)
-                except Queue.Empty:
+                except queue.Empty:
                     continue
 
                 if predicate(event):

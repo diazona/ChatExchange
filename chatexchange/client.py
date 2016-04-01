@@ -1,7 +1,7 @@
 import collections
 import re
 import time
-import Queue
+import queue
 import threading
 import logging
 import weakref
@@ -55,7 +55,7 @@ class Client(object):
         self.host = host
         self.logged_in = False
         self.on_message_sent = None
-        self._request_queue = Queue.Queue()
+        self._request_queue = queue.Queue()
 
         self._br = browser.Browser()
         self._br.host = host
@@ -102,7 +102,7 @@ class Client(object):
     def _get_and_set_deduplicated(self, cls, id, instances, attrs):
         instance = instances.setdefault(id, cls(id, self))
 
-        for key, value in attrs.items():
+        for key, value in list(attrs.items()):
             setattr(instance, key, value)
 
         # we force a fixed number of recent objects to be cached
@@ -148,10 +148,10 @@ class Client(object):
         """
         assert self.logged_in
 
-        for watcher in self._br.sockets.values():
+        for watcher in list(self._br.sockets.values()):
             watcher.killed = True
 
-        for watcher in self._br.polls.values():
+        for watcher in list(self._br.polls.values()):
             watcher.killed = True
 
         self._request_queue.put(SystemExit)
@@ -236,7 +236,7 @@ class Client(object):
                                 "It is too late to edit this message",
                                 "The message has been deleted and cannot be edited",
                                 "This message has already been deleted."]
-            if isinstance(unpacked, basestring) and unpacked not in ignored_messages:
+            if isinstance(unpacked, str) and unpacked not in ignored_messages:
                 match = re.match(TOO_FAST_RE, unpacked)
                 if match:  # Whoops, too fast.
                     wait = int(match.group(1))

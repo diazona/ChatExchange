@@ -5,7 +5,7 @@ Opens a web page displaying a simple updating view of a chat room.
 This is not meant for unauthenticated, remote, or multi-client use.
 """
 
-import BaseHTTPServer
+import http.server
 import collections
 import getpass
 import json
@@ -33,7 +33,7 @@ def main(port='8462'):
     else:
         sys.stderr.write("Username: ")
         sys.stderr.flush()
-        email = raw_input()
+        email = input()
     if 'ChatExchangeP' in os.environ:
         password = os.environ['ChatExchangeP']
     else:
@@ -48,7 +48,7 @@ def main(port='8462'):
     httpd.serve_forever()
 
 
-class Server(BaseHTTPServer.HTTPServer, object):
+class Server(http.server.HTTPServer, object):
     def __init__(self, *a, **kw):
         self.client = kw.pop('client')
         self.room = self.client.get_room(kw.pop('room_id'))
@@ -70,7 +70,7 @@ class Server(BaseHTTPServer.HTTPServer, object):
                 'name': self.room.name
             },
             'recent_events':
-                map(str, self.client._recently_gotten_objects),
+                list(map(str, self.client._recently_gotten_objects)),
             'messages': [{
                 'id': message.id,
                 'owner_user_id': message.owner.id,
@@ -91,7 +91,7 @@ class Server(BaseHTTPServer.HTTPServer, object):
             self.messages.append(event.message)
 
 
-class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
+class Handler(http.server.BaseHTTPRequestHandler, object):
     logger = logging.getLogger(__name__).getChild('Handler')
 
     def do_GET(self):

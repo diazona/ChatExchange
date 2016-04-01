@@ -7,7 +7,7 @@ import time
 from bs4 import BeautifulSoup
 import requests
 import websocket
-import _utils
+from . import _utils
 import socket
 import re
 
@@ -76,9 +76,9 @@ class Browser(object):
                 response = method_method(
                     url, data=data, headers=headers, timeout=self.request_timeout)
                 break
-            except requests.exceptions.ConnectionError, e:          # We want to try again, so continue
+            except requests.exceptions.ConnectionError as e:          # We want to try again, so continue
                                                                     # BadStatusLine throws this error
-                print "Connection Error -> Trying again..."
+                print("Connection Error -> Trying again...")
                 time.sleep(0.1)     # short pause before retrying
                 if attempt == MAX_HTTP_RETRIES:                     # Only show exception if last try
                     raise
@@ -86,7 +86,7 @@ class Browser(object):
             except (requests.exceptions.Timeout, socket.timeout) as e:                  # Timeout occurred, retry
                                                                 # Catching both because of this bug in requests
                                                                 # https://github.com/kennethreitz/requests/issues/1236
-                print "Timeout -> Trying again..."
+                print("Timeout -> Trying again...")
                 time.sleep(1.0)     # Longer pause because it was a time out. Assume overloaded and give them a second
                 if attempt == MAX_HTTP_RETRIES:                     # Only show exception if last try
                     raise
@@ -540,7 +540,7 @@ class Browser(object):
 
         name = profile_soup.find('h1').text
 
-        is_moderator = bool(u'♦' in profile_soup.select('.user-status')[0].text)
+        is_moderator = bool('♦' in profile_soup.select('.user-status')[0].text)
         message_count = int(profile_soup.select('.user-message-count-xxl')[0].text)
         room_count = int(profile_soup.select('.user-room-count-xxl')[0].text)
         reputation_elements = profile_soup.select('.reputation-score')
