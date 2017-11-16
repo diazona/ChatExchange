@@ -43,6 +43,7 @@ class Browser(object):
         self.polls = {}
         self.host = None
         self.on_websocket_closed = self._default_ws_recovery
+        self.on_connection_closed = self._default_poll_recovery
 
     def _default_ws_recovery(self, room_id):
         on_activity = self.sockets[room_id].on_activity
@@ -52,6 +53,16 @@ class Browser(object):
             pass
         self.join_room(room_id)
         self.watch_room_socket(room_id, on_activity)
+
+    def _default_poll_recovery(self, room_id):
+        on_activity = self.polls[room_id].on_activity
+        interval = self.polls[room_id].interval
+        try:
+            self.leave_room(room_id)
+        except requests.ConnectionError:
+            pass
+        self.join_room(room_id)
+        self.watch_room_http(room_id, on_activity, interval)
 
     @property
     def chat_root(self):
@@ -660,12 +671,15 @@ class Browser(object):
     def get_current_user_names_in_room(self, room_id):
         return [name for (user_id, name) in self.get_current_users_in_room(room_id)]
 
-
     def set_websocket_recovery(self, on_ws_closed):
         self.on_websocket_closed = on_ws_closed
         for s in self.sockets:
             s.on_websocket_closed = self.on_websocket_closed
 
+    def set_http_recovery(self, on_connection_closed):
+        self.on_connection_closed = on_connection_closed
+        for s in self.polls:
+            s.on_connection_closed = self.on_connection_closed
 
 class RoomSocketWatcher(object):
     def __init__(self, browser, room_id, on_activity):
@@ -723,6 +737,7 @@ class RoomPollingWatcher(object):
         self.room_id = str(room_id)
         self.thread = None
         self.on_activity = on_activity
+        self.on_connection_closed = None
         self.interval = interval
         self.killed = False
 
@@ -738,8 +753,17 @@ class RoomPollingWatcher(object):
         while not self.killed:
             last_event_time = self.browser.rooms[self.room_id]['eventtime']
 
-            activity = self.browser.post_fkeyed(
-                'events', {'r' + self.room_id: last_event_time}).json()
+            try:
+                activity = self.browser.post_fkeyed(
+                    'events', {'r' + self.room_id: last_event_time}).json()
+            except requests.Timeout:
+                self.logger.exception()
+                if self.on_connection_closed is not None:
+                    self.on_connection_closed(self.room_id)
+                else:
+                    raise
+                self.killed = True
+                break
 
             try:
                 room_result = activity['r' + self.room_id]
