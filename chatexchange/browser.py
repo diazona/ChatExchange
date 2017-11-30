@@ -44,6 +44,7 @@ class Browser(object):
         self.host = None
         self.on_websocket_closed = self._default_ws_recovery
         self.on_connection_closed = self._default_poll_recovery
+        self.on_connection_error = self._default_poll_recovery
 
     def _default_ws_recovery(self, room_id):
         on_activity = self.sockets[room_id].on_activity
@@ -738,6 +739,7 @@ class RoomPollingWatcher(object):
         self.thread = None
         self.on_activity = on_activity
         self.on_connection_closed = None
+        self.on_connection_error = None
         self.interval = interval
         self.killed = False
 
@@ -760,6 +762,14 @@ class RoomPollingWatcher(object):
                 self.logger.exception()
                 if self.on_connection_closed is not None:
                     self.on_connection_closed(self.room_id)
+                else:
+                    raise
+                self.killed = True
+                break
+            except (requests.HTTPError, requests.ConnectionError):
+                if self.on_connection_error is not None:
+                    self.logger.exception('Handling requests exception')
+                    self.on_connection_error(self.room_id)
                 else:
                     raise
                 self.killed = True
