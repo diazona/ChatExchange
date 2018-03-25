@@ -766,7 +766,7 @@ class RoomPollingWatcher(object):
                     raise
                 self.killed = True
                 break
-            except (requests.HTTPError, requests.ConnectionError):
+            except (requests.HTTPError, requests.exceptions.ConnectionError):
                 if self.on_connection_error is not None:
                     self.logger.exception('Handling requests exception')
                     self.on_connection_error(self.room_id)
