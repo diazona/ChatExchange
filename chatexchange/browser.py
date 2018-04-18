@@ -758,7 +758,7 @@ class RoomPollingWatcher(object):
             try:
                 activity = self.browser.post_fkeyed(
                     'events', {'r' + self.room_id: last_event_time}).json()
-            except (requests.Timeout, requests.exceptions.ConnectTimeout):
+            except (requests.Timeout, requests.exceptions.ConnectTimeout, request.exceptions.ReadTimeout):
                 self.logger.exception('Timeout')
                 if self.on_connection_closed is not None:
                     self.on_connection_closed(self.room_id)
